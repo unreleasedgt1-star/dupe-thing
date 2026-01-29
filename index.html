@@ -36,6 +36,7 @@
             line-height: 1.6;
             overflow-x: hidden;
             position: relative;
+            position: relative;
         }
 
         /* Animated background grid */
@@ -134,6 +135,7 @@
             color: var(--accent-secondary);
             opacity: 0.3;
             animation: glitch 3s infinite;
+            pointer-events: none;
             pointer-events: none;
         }
 
@@ -239,6 +241,7 @@
             margin-right: 10px;
             accent-color: var(--accent-primary);
             z-index: 3;
+            z-index: 3;
         }
 
         .filter-option label {
@@ -310,8 +313,11 @@
             transition: all 0.3s ease;
             z-index: 10;
             z-index: 10;
+            z-index: 10;
+            z-index: 10;
             position: relative;
             overflow: hidden;
+            z-index: 10;
             z-index: 10;
         }
 
@@ -357,6 +363,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             z-index: 10;
+            z-index: 10;
         }
 
         .sort-select:focus {
@@ -390,6 +397,7 @@
             transform: scaleY(0);
             transition: transform 0.3s ease;
             transform-origin: bottom;
+            pointer-events: none;
             pointer-events: none;
         }
 
@@ -518,6 +526,7 @@
             align-items: center;
             gap: 5px;
             font-family: 'JetBrains Mono', monospace;
+            z-index: 11;
             z-index: 11;
         }
 
@@ -751,6 +760,7 @@
             left: 2px;
             transition: all 0.3s ease;
             pointer-events: none;
+            pointer-events: none;
         }
 
         .toggle-switch.active::after {
@@ -850,7 +860,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.9);
-            z-index: 2000;
+            z-index: 10000;
             overflow-y: auto;
         }
 
@@ -866,6 +876,7 @@
             padding: 40px;
             text-align: center;
             position: relative;
+            z-index: 10001;
         }
 
         .close-modal {
@@ -884,6 +895,7 @@
             position: absolute;
             top: 20px;
             right: 20px;
+            z-index: 10002;
         }
 
         .close-modal:hover {
@@ -942,6 +954,7 @@
             background: var(--bg-secondary);
             border: 2px solid var(--accent-primary);
             position: relative;
+            z-index: 10001;
         }
 
         .submit-header {
@@ -981,6 +994,7 @@
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 1px;
+            pointer-events: none;
             pointer-events: none;
         }
 
@@ -1055,6 +1069,7 @@
             transition: all 0.3s ease;
             text-align: center;
             z-index: 10;
+            z-index: 10;
         }
 
         .type-btn:hover,
@@ -1089,6 +1104,7 @@
             transition: all 0.3s ease;
             resize: vertical;
             z-index: 10;
+            z-index: 10;
         }
 
         .form-input:focus,
@@ -1114,6 +1130,8 @@
             display: flex;
             justify-content: space-between;
             gap: 15px;
+            position: relative;
+            z-index: 10002;
         }
 
         .btn-back {
@@ -1209,6 +1227,7 @@
             border-bottom: 3px solid transparent;
             margin-bottom: -2px;
             z-index: 10;
+            z-index: 10;
         }
 
         .mod-tab:hover {
@@ -1250,6 +1269,7 @@
             display: flex;
             gap: 10px;
             margin-top: 15px;
+            z-index: 20;
             z-index: 20;
         }
 
@@ -1764,10 +1784,10 @@
             </div>
 
             <div class="mod-tabs">
-                <button class="mod-tab active" onclick="window.switchModTab('pending')">Pending</button>
-                <button class="mod-tab" onclick="window.switchModTab('rejected')">Rejected</button>
-                <button class="mod-tab" onclick="window.switchModTab('comments')">Comments</button>
-                <button class="mod-tab" onclick="window.switchModTab('users')">Users</button>
+                <button class="mod-tab active" onclick="window.switchModTab('pending', event)">Pending</button>
+                <button class="mod-tab" onclick="window.switchModTab('rejected', event)">Rejected</button>
+                <button class="mod-tab" onclick="window.switchModTab('comments', event)">Comments</button>
+                <button class="mod-tab" onclick="window.switchModTab('users', event)">Users</button>
             </div>
 
             <div class="mod-section" id="modSectionPending">
@@ -1814,7 +1834,7 @@
     <!-- Login Modal -->
     <div id="loginModal" class="modal">
         <div class="login-modal-content">
-            <button class="close-modal" onclick="window.closeLoginModal()">×</button>
+            <button class="close-modal" onclick="event.stopPropagation(); window.closeLoginModal()">×</button>
             <h2 class="login-title">Welcome to ExploitVault</h2>
             <p class="login-subtitle">Sign in with your Discord account to submit exploits, vote, and comment.</p>
             
@@ -1830,7 +1850,7 @@
     <!-- Submit Exploit Modal -->
     <div id="submitModal" class="modal">
         <div class="submit-modal-content">
-            <button class="close-modal" onclick="window.closeSubmitModal()">×</button>
+            <button class="close-modal" onclick="event.stopPropagation(); window.closeSubmitModal()">×</button>
             
             <div class="submit-header">
                 <h2 class="submit-title">Submit New Exploit</h2>
@@ -1847,36 +1867,36 @@
                         <h3>Exploit Type</h3>
                         <p class="form-help">Select all that apply</p>
                         <div class="type-grid">
-                            <button class="type-btn" onclick="window.toggleExploitType('dupe')">DUPE</button>
-                            <button class="type-btn" onclick="window.toggleExploitType('crash')">CRASH</button>
-                            <button class="type-btn" onclick="window.toggleExploitType('forceop')">FORCEOP</button>
-                            <button class="type-btn" onclick="window.toggleExploitType('bypass')">BYPASS</button>
-                            <button class="type-btn" onclick="window.toggleExploitType('other')">OTHER</button>
+                            <button class="type-btn" onclick="event.stopPropagation(); window.toggleExploitType('dupe')">DUPE</button>
+                            <button class="type-btn" onclick="event.stopPropagation(); window.toggleExploitType('crash')">CRASH</button>
+                            <button class="type-btn" onclick="event.stopPropagation(); window.toggleExploitType('forceop')">FORCEOP</button>
+                            <button class="type-btn" onclick="event.stopPropagation(); window.toggleExploitType('bypass')">BYPASS</button>
+                            <button class="type-btn" onclick="event.stopPropagation(); window.toggleExploitType('other')">OTHER</button>
                         </div>
                     </div>
 
                     <div class="form-section">
                         <h3>Edition</h3>
                         <div class="type-grid">
-                            <button class="edition-btn" onclick="window.selectEdition('Java')">JAVA</button>
-                            <button class="edition-btn" onclick="window.selectEdition('Bedrock')">BEDROCK</button>
+                            <button class="edition-btn" onclick="event.stopPropagation(); window.selectEdition('Java')">JAVA</button>
+                            <button class="edition-btn" onclick="event.stopPropagation(); window.selectEdition('Bedrock')">BEDROCK</button>
                         </div>
                     </div>
 
                     <div class="form-section">
                         <h3>Platform</h3>
                         <div class="type-grid">
-                            <button class="platform-btn" onclick="window.selectPlatform('Singleplayer')">SINGLEPLAYER</button>
-                            <button class="platform-btn" onclick="window.selectPlatform('Multiplayer')">MULTIPLAYER</button>
+                            <button class="platform-btn" onclick="event.stopPropagation(); window.selectPlatform('Singleplayer')">SINGLEPLAYER</button>
+                            <button class="platform-btn" onclick="event.stopPropagation(); window.selectPlatform('Multiplayer')">MULTIPLAYER</button>
                         </div>
                     </div>
 
                     <div class="form-section">
                         <h3>Exploit Category</h3>
                         <div class="type-grid">
-                            <button class="category-btn" onclick="window.selectCategory('plugin')">PLUGIN SPECIFIC</button>
-                            <button class="category-btn" onclick="window.selectCategory('server')">SERVER SPECIFIC</button>
-                            <button class="category-btn" onclick="window.selectCategory('version')">VERSION SPECIFIC</button>
+                            <button class="category-btn" onclick="event.stopPropagation(); window.selectCategory('plugin')">PLUGIN SPECIFIC</button>
+                            <button class="category-btn" onclick="event.stopPropagation(); window.selectCategory('server')">SERVER SPECIFIC</button>
+                            <button class="category-btn" onclick="event.stopPropagation(); window.selectCategory('version')">VERSION SPECIFIC</button>
                         </div>
                     </div>
                 </div>
@@ -1885,31 +1905,31 @@
                 <div class="submit-step" id="submitStep2">
                     <div class="form-section">
                         <h3>Exploit Name</h3>
-                        <input type="text" class="form-input" id="exploitTitle" placeholder="Enter exploit name...">
+                        <input type="text" class="form-input" id="exploitTitle" placeholder="Enter exploit name..." onclick="event.stopPropagation()">
                     </div>
 
                     <div class="form-section">
                         <h3>Description & Procedure</h3>
                         <p class="form-help">Describe the exploit and how to reproduce it</p>
-                        <textarea class="form-textarea" id="exploitDescription" placeholder="Describe the exploit..."></textarea>
+                        <textarea class="form-textarea" id="exploitDescription" placeholder="Describe the exploit..." onclick="event.stopPropagation()"></textarea>
                     </div>
 
                     <div class="form-section optional">
                         <h3>Steps to Reproduce</h3>
-                        <textarea class="form-textarea" id="exploitSteps" placeholder="1. First step...&#10;2. Second step...&#10;3. ..."></textarea>
+                        <textarea class="form-textarea" id="exploitSteps" placeholder="1. First step...&#10;2. Second step...&#10;3. ..." onclick="event.stopPropagation()"></textarea>
                     </div>
 
                     <div class="form-section optional">
                         <h3>Requirements</h3>
-                        <textarea class="form-textarea" id="exploitRequirements" placeholder="Any required mods, plugins, or specific conditions..."></textarea>
+                        <textarea class="form-textarea" id="exploitRequirements" placeholder="Any required mods, plugins, or specific conditions..." onclick="event.stopPropagation()"></textarea>
                     </div>
 
                     <div class="form-section optional">
                         <h3>Status</h3>
                         <p class="form-help">Mark this exploit as working or patched if applicable</p>
                         <div class="type-grid">
-                            <button class="status-btn" onclick="window.toggleStatus('verified')">WORKING</button>
-                            <button class="status-btn" onclick="window.toggleStatus('patched')">PATCHED</button>
+                            <button class="status-btn" onclick="event.stopPropagation(); window.toggleStatus('verified')">WORKING</button>
+                            <button class="status-btn" onclick="event.stopPropagation(); window.toggleStatus('patched')">PATCHED</button>
                         </div>
                     </div>
                 </div>
@@ -2053,22 +2073,28 @@
 
                 currentUser = user;
                 localStorage.setItem('exploitVaultUser', JSON.stringify(user));
-                
-                // Add user to users list if not already there
-                const existingUser = users.find(u => u.id === user.id);
-                if (!existingUser) {
-                    users.push({
-                        id: user.id,
-                        discordId: user.discordId,
-                        displayName: user.displayName,
-                        avatar: user.avatar,
-                        joinedDate: user.joinedDate,
-                        isModerator: user.isModerator
-                    });
-                    saveUsers();
-                }
-                
-                updateAuthUI();
+        
+        // Add or update user in users list
+        const existingUserIndex = users.findIndex(u => u.id === user.id);
+        const userEntry = {
+            id: user.id,
+            discordId: user.discordId,
+            displayName: user.displayName,
+            avatar: user.avatar,
+            joinedDate: user.joinedDate,
+            isModerator: user.isModerator
+        };
+        
+        if (existingUserIndex >= 0) {
+            // Update existing user
+            users[existingUserIndex] = userEntry;
+        } else {
+            // Add new user
+            users.push(userEntry);
+        }
+        saveUsers();
+        
+        updateAuthUI();
                 closeLoginModal();
                 alert('✓ Welcome, ' + user.displayName + '!');
             } catch (error) {
@@ -2443,7 +2469,7 @@
             resetSubmitForm();
         }
 
-        let currentSubmitStep = 1;
+        window.currentSubmitStep = 1;
         let submitFormData = {
             types: [],
             edition: '',
@@ -2457,7 +2483,7 @@
         };
 
         window.showSubmitStep = function(step) {
-            currentSubmitStep = step;
+    window.window.currentSubmitStep = step;
             document.querySelectorAll('.submit-step').forEach(el => el.classList.remove('active'));
             document.getElementById('submitStep' + step).classList.add('active');
             
@@ -2624,7 +2650,12 @@
         }
 
         // Moderator Functions
-        window.switchModTab = function(tab) {
+        window.switchModTab = function(tab, event) {
+    // Prevent event propagation if event is passed
+    if (event) {
+        event.stopPropagation();
+    }
+    
             // Update tab buttons
             document.querySelectorAll('.mod-tab').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
