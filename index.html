@@ -5,8 +5,8 @@
 ║                         EXPLOITVAULT - SETUP GUIDE                           ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
-📋 DISCORD OAUTH CONFIGURATION
-================================
+📋 DISCORD OAUTH CONFIGURATION (FIXED FOR NETLIFY)
+===================================================
 
 To enable Discord authentication, follow these steps:
 
@@ -18,50 +18,40 @@ To enable Discord authentication, follow these steps:
 
 2️⃣ CONFIGURE OAUTH2
    → In your application, go to "OAuth2" → "General"
-   → Add a redirect URL:
-     For production: https://yourdomain.com/callback
-     For testing: http://localhost:8000/callback
+   → Add a redirect URL - THIS IS IMPORTANT:
+     
+     For Netlify (or any static hosting):
+     → Use your main site URL: https://your-site.netlify.app
+     (NOT https://your-site.netlify.app/callback)
+     
+     For local testing:
+     → Use: http://localhost:8000
+   
    → Click "Save Changes"
    
 3️⃣ GET YOUR CREDENTIALS
-   → Copy your "Client ID"
-   → Copy your "Client Secret"
-   → Keep the Client Secret private!
+   → Copy your "Client ID" from the OAuth2 page
+   → Keep this safe!
 
 4️⃣ UPDATE THIS FILE
-   → Replace "YOUR_DISCORD_CLIENT_ID" around line 1280
-   → For production use, implement a backend to handle the OAuth flow
-     (Discord requires a client secret which should NOT be in frontend code)
+   → Replace "YOUR_DISCORD_CLIENT_ID" with your actual Client ID (around line 1250)
 
-5️⃣ DEPLOY OR TEST
-   
-   FOR LOCAL TESTING:
-   → Run a local web server (file:// won't work with OAuth)
-   
-   Option A - Python:
-   python3 -m http.server 8000
-   
-   Option B - Node.js:
-   npx http-server -p 8000
-   
-   Option C - PHP:
-   php -S localhost:8000
-   
-   → Then open: http://localhost:8000
+5️⃣ DEPLOY TO NETLIFY
+   → Upload this HTML file to Netlify
+   → Make sure the redirect URI in Discord matches your Netlify URL exactly
+   → Test the login!
 
 🔒 SECURITY NOTES:
-   → IMPORTANT: This implementation uses implicit OAuth flow for demo purposes
-   → For production, implement a proper backend to handle the OAuth code flow
-   → Never expose your Client Secret in frontend code
-   → Use environment variables and server-side authentication
-   → Implement proper token refresh and validation
+   → This uses implicit OAuth flow (safe for client-side apps)
+   → For production apps with sensitive data, use a backend
+   → The access token expires after some time (you may need to re-login)
 
 ✅ WHAT WORKS NOW:
    → Discord OAuth authentication
-   → User profile with username, discriminator, avatar
+   → User profile with username and avatar
    → Persistent login (survives page refresh)
-   → Secure logout
-   → Protected actions (submit, vote)
+   → Works with Netlify and other static hosts
+   → Proper callback handling without 404 errors
 
 -->
 <head>
@@ -1339,12 +1329,11 @@ To enable Discord authentication, follow these steps:
             <!-- Setup Instructions Notice -->
             <div class="setup-notice">
                 <strong>⚙️ Setup Required:</strong>
-                To enable Discord authentication, you need to:
+                To enable Discord authentication:
                 <ul style="margin: 10px 0 0 20px; text-align: left;">
-                    <li>Create a Discord application at discord.com/developers</li>
-                    <li>Configure OAuth2 with your redirect URL</li>
+                    <li>Create a Discord app at discord.com/developers/applications</li>
+                    <li>Add your site URL as the OAuth2 redirect (no /callback needed)</li>
                     <li>Replace YOUR_DISCORD_CLIENT_ID in the code</li>
-                    <li>For production, implement a backend to handle the OAuth flow</li>
                 </ul>
             </div>
 
@@ -1355,7 +1344,7 @@ To enable Discord authentication, follow these steps:
         </div>
     </div>
 
-    <!-- Submit Exploit Modal -->
+    <!-- Submit Exploit Modal (rest of the form code remains the same) -->
     <div id="submitModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1528,75 +1517,56 @@ To enable Discord authentication, follow these steps:
     </div>
 
     <script>
-        /*
-         * DISCORD OAUTH SETUP INSTRUCTIONS
-         * =================================
-         * 
-         * To enable Discord OAuth, you need to:
-         * 
-         * 1. Go to Discord Developer Portal: https://discord.com/developers/applications
-         * 
-         * 2. Create a new application (or select an existing one)
-         *    - Click "New Application"
-         *    - Give it a name (e.g., "ExploitVault")
-         * 
-         * 3. Configure OAuth2:
-         *    - Go to "OAuth2" → "General"
-         *    - Add redirect URL(s):
-         *      Example: https://yourdomain.com/callback (production)
-         *      Example: http://localhost:8000/callback (testing)
-         *    - Click "Save Changes"
-         * 
-         * 4. Get your credentials:
-         *    - Copy your "Client ID" from the "OAuth2" page
-         *    - Copy your "Client Secret" (keep this private!)
-         * 
-         * 5. Update the DISCORD_CLIENT_ID constant below with your Client ID
-         * 
-         * 6. IMPORTANT SECURITY NOTE:
-         *    - This demo uses implicit OAuth flow for simplicity
-         *    - For production, implement a backend server to handle OAuth
-         *    - Never expose your Client Secret in frontend code
-         *    - Use the authorization code flow with PKCE for better security
-         * 
-         * TESTING LOCALLY:
-         * ===============
-         * - Run a local web server (file:// protocol won't work):
-         *   python3 -m http.server 8000
-         *   OR
-         *   npx http-server -p 8000
-         * - Add http://localhost:8000/callback to your redirect URLs
-         */
+        // ===================================================================
+        // DISCORD OAUTH CONFIGURATION - FIXED FOR NETLIFY
+        // ===================================================================
+        
+        // Replace this with your Discord Client ID from https://discord.com/developers/applications
+        const DISCORD_CLIENT_ID = '1466337764231479329';
+        
+        // IMPORTANT: The redirect URI should be your main site URL (no /callback path needed)
+        // For Netlify: https://your-site.netlify.app
+        // For localhost: http://localhost:8000
+        const REDIRECT_URI = window.location.origin + window.location.pathname;
+        
+        // Discord OAuth URL - using implicit flow (safe for client-side apps)
+        const DISCORD_OAUTH_URL = `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify`;
 
-        // Discord OAuth Configuration
-        const DISCORD_CLIENT_ID = '1466337764231479329'; // Replace with your Discord Client ID
-        const REDIRECT_URI = window.location.origin + '/callback'; // Adjust for your setup
-        const DISCORD_OAUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify`;
-
-        // Authentication state
+        // ===================================================================
+        // AUTHENTICATION STATE
+        // ===================================================================
         let currentUser = null;
 
-        // Check for existing login on page load
+        // Check for OAuth callback or saved user on page load
         window.addEventListener('load', function() {
-            // Check for OAuth callback in URL
+            console.log('Page loaded, checking auth state...');
+            
+            // Check if we just got redirected back from Discord (hash will contain access_token)
             const hashParams = new URLSearchParams(window.location.hash.substring(1));
             const accessToken = hashParams.get('access_token');
             
             if (accessToken) {
-                // We just got redirected back from Discord
+                console.log('✓ Access token found in URL hash, fetching user data...');
                 fetchDiscordUser(accessToken);
-                // Clean up URL
+                // Clean up URL (remove the hash with token)
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {
-                // Check for saved user in localStorage
+                // No token in URL, check localStorage for existing session
                 const savedUser = localStorage.getItem('exploitVaultUser');
                 if (savedUser) {
+                    console.log('✓ Existing user session found in localStorage');
                     currentUser = JSON.parse(savedUser);
                     updateAuthUI();
+                } else {
+                    console.log('No existing session found');
                 }
             }
         });
 
+        // ===================================================================
+        // LOGIN MODAL FUNCTIONS
+        // ===================================================================
+        
         function openLoginModal() {
             document.getElementById('loginModal').classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -1610,17 +1580,22 @@ To enable Discord authentication, follow these steps:
         // Initiate Discord OAuth flow
         function initiateDiscordLogin() {
             if (DISCORD_CLIENT_ID === 'YOUR_DISCORD_CLIENT_ID') {
-                alert('⚙️ Discord OAuth is not configured yet!\n\nPlease follow these steps:\n1. Create a Discord application at discord.com/developers/applications\n2. Get your Client ID from the OAuth2 page\n3. Replace YOUR_DISCORD_CLIENT_ID in the code\n4. Add your redirect URI to the OAuth2 settings');
+                alert('⚙️ Discord OAuth not configured!\n\nSteps to fix:\n1. Go to discord.com/developers/applications\n2. Create a new application\n3. Go to OAuth2 settings\n4. Add redirect URI: ' + REDIRECT_URI + '\n5. Copy your Client ID\n6. Replace YOUR_DISCORD_CLIENT_ID in the code');
                 return;
             }
             
-            // Redirect to Discord OAuth
+            console.log('Redirecting to Discord OAuth...');
+            console.log('Redirect URI:', REDIRECT_URI);
+            
+            // Redirect to Discord OAuth - Discord will redirect back to our site with token in URL hash
             window.location.href = DISCORD_OAUTH_URL;
         }
 
         // Fetch Discord user data with access token
         async function fetchDiscordUser(accessToken) {
             try {
+                console.log('Fetching Discord user data...');
+                
                 const response = await fetch('https://discord.com/api/users/@me', {
                     headers: {
                         Authorization: `Bearer ${accessToken}`
@@ -1628,25 +1603,27 @@ To enable Discord authentication, follow these steps:
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch Discord user');
+                    throw new Error('Failed to fetch Discord user: ' + response.status);
                 }
 
                 const discordUser = await response.json();
+                console.log('✓ Discord user data received:', discordUser.username);
                 
                 // Create user object
                 const user = {
                     id: 'discord_' + discordUser.id,
                     name: discordUser.username,
                     discriminator: discordUser.discriminator,
-                    displayName: discordUser.discriminator === '0' 
+                    displayName: discordUser.discriminator === '0' || discordUser.discriminator === null
                         ? discordUser.username 
                         : `${discordUser.username}#${discordUser.discriminator}`,
                     avatar: discordUser.avatar 
                         ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
-                        : `https://cdn.discordapp.com/embed/avatars/${parseInt(discordUser.discriminator) % 5}.png`,
+                        : `https://cdn.discordapp.com/embed/avatars/${(parseInt(discordUser.id) >> 22) % 6}.png`,
                     provider: 'discord',
                     discordId: discordUser.id,
-                    accessToken: accessToken // Store for future API calls
+                    accessToken: accessToken,
+                    loginTime: Date.now()
                 };
 
                 // Save user to state and localStorage
@@ -1658,16 +1635,20 @@ To enable Discord authentication, follow these steps:
                 closeLoginModal();
                 
                 // Show welcome message
-                console.log('✓ User logged in:', user);
-                showNotification('✓ Successfully signed in as ' + user.displayName + '!', 'success');
+                console.log('✓ User logged in successfully');
+                showNotification('✓ Welcome, ' + user.displayName + '!');
             } catch (error) {
-                console.error('Error fetching Discord user:', error);
-                alert('❌ Error signing in with Discord. Please try again.');
+                console.error('❌ Error fetching Discord user:', error);
+                alert('❌ Error signing in with Discord. Please try again.\n\n' + error.message);
             }
         }
 
-        // Notification helper
-        function showNotification(message, type = 'info') {
+        // ===================================================================
+        // UI UPDATE FUNCTIONS
+        // ===================================================================
+
+        function showNotification(message) {
+            // Simple alert - you could replace with a toast notification
             alert(message);
         }
 
@@ -1683,10 +1664,12 @@ To enable Discord authentication, follow these steps:
                 userMenu.style.display = 'block';
                 userName.textContent = currentUser.displayName || currentUser.name;
                 userAvatar.src = currentUser.avatar;
+                console.log('UI updated: User logged in as', currentUser.displayName);
             } else {
                 // User is not logged in
                 loginBtn.style.display = 'block';
                 userMenu.style.display = 'none';
+                console.log('UI updated: User logged out');
             }
         }
 
@@ -1715,7 +1698,8 @@ To enable Discord authentication, follow these steps:
                 currentUser = null;
                 localStorage.removeItem('exploitVaultUser');
                 updateAuthUI();
-                toggleUserDropdown();
+                const dropdown = document.getElementById('userDropdown');
+                dropdown.classList.remove('active');
                 alert('✓ Successfully signed out.');
             }
         }
@@ -1729,7 +1713,9 @@ To enable Discord authentication, follow these steps:
             }
         });
 
-        // Exploit data - initially empty
+        // ===================================================================
+        // EXPLOIT DATA & RENDERING
+        // ===================================================================
         let exploits = [];
 
         const exploitsGrid = document.getElementById('exploitsGrid');
@@ -1817,27 +1803,16 @@ To enable Discord authentication, follow these steps:
         function populateVersions() {
             const versionGrid = document.getElementById('versionGrid');
             const javaVersions = [
-                // 1.21.x
                 '1.21.11', '1.21.10', '1.21.9', '1.21.8', '1.21.7', '1.21.6', '1.21.5', '1.21.4', '1.21.3', '1.21.2', '1.21.1', '1.21.0',
-                // 1.20.x
                 '1.20.6', '1.20.5', '1.20.4', '1.20.3', '1.20.2', '1.20.1', '1.20.0',
-                // 1.19.x
                 '1.19.4', '1.19.3', '1.19.2', '1.19.1', '1.19.0',
-                // 1.18.x
                 '1.18.2', '1.18.1', '1.18.0',
-                // 1.17.x
                 '1.17.1', '1.17.0',
-                // 1.16.x
                 '1.16.5', '1.16.4', '1.16.3', '1.16.2', '1.16.1', '1.16.0',
-                // 1.15.x
                 '1.15.2', '1.15.1', '1.15.0',
-                // 1.14.x
                 '1.14.4', '1.14.3', '1.14.2', '1.14.1', '1.14.0',
-                // 1.13.x
                 '1.13.2', '1.13.1', '1.13.0',
-                // 1.12.x
                 '1.12.2', '1.12.1', '1.12.0',
-                // Earlier versions
                 '1.11.2', '1.10.2', '1.9.4', '1.8.9', '1.7.10'
             ];
 
