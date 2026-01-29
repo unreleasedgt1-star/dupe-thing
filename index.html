@@ -870,6 +870,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.9);
+            pointer-events: none;
             z-index: 10000;
             overflow-y: auto;
         }
@@ -879,6 +880,7 @@
         }
 
         .login-modal-content {
+            pointer-events: auto;
             max-width: 500px;
             margin: 100px auto;
             background: var(--bg-secondary);
@@ -961,6 +963,7 @@
 
         /* Submit Modal Styles */
         .submit-modal-content {
+            pointer-events: auto;
             max-width: 800px;
             margin: 50px auto;
             background: var(--bg-secondary);
@@ -971,6 +974,7 @@
         }
 
         .submit-header {
+            pointer-events: auto;
             padding: 30px 40px;
             border-bottom: 2px solid var(--border-color);
             position: relative;
@@ -1019,6 +1023,7 @@
         }
 
         .submit-body {
+            pointer-events: auto;
             padding: 40px;
             max-height: 60vh;
             overflow-y: auto;
@@ -1072,7 +1077,8 @@
         .category-btn,
         .status-btn {
             position: relative;
-            z-index: 100;
+            z-index: 10050;
+            pointer-events: auto;
             padding: 15px 20px;
             background: var(--bg-tertiary);
             border: 2px solid var(--border-color);
@@ -1319,6 +1325,7 @@
 
         @media (max-width: 640px) {
             .submit-modal-content {
+            pointer-events: auto;
                 margin: 20px;
             }
 
@@ -1927,23 +1934,23 @@
                 <div class="submit-step" id="submitStep2">
                     <div class="form-section">
                         <h3>Exploit Name</h3>
-                        <input type="text" class="form-input" id="exploitTitle" placeholder="Enter exploit name..." onclick="event.stopPropagation()" onclick="event.stopPropagation()">
+                        <input type="text" class="form-input" id="exploitTitle" placeholder="Enter exploit name..." onclick="event.stopPropagation()">
                     </div>
 
                     <div class="form-section">
                         <h3>Description & Procedure</h3>
                         <p class="form-help">Describe the exploit and how to reproduce it</p>
-                        <textarea class="form-textarea" id="exploitDescription" placeholder="Describe the exploit..." onclick="event.stopPropagation()" onclick="event.stopPropagation()"></textarea>
+                        <textarea class="form-textarea" id="exploitDescription" placeholder="Describe the exploit..." onclick="event.stopPropagation()"></textarea>
                     </div>
 
                     <div class="form-section optional">
                         <h3>Steps to Reproduce</h3>
-                        <textarea class="form-textarea" id="exploitSteps" placeholder="1. First step...&#10;2. Second step...&#10;3. ..." onclick="event.stopPropagation()" onclick="event.stopPropagation()"></textarea>
+                        <textarea class="form-textarea" id="exploitSteps" placeholder="1. First step...&#10;2. Second step...&#10;3. ..." onclick="event.stopPropagation()"></textarea>
                     </div>
 
                     <div class="form-section optional">
                         <h3>Requirements</h3>
-                        <textarea class="form-textarea" id="exploitRequirements" placeholder="Any required mods, plugins, or specific conditions..." onclick="event.stopPropagation()" onclick="event.stopPropagation()"></textarea>
+                        <textarea class="form-textarea" id="exploitRequirements" placeholder="Any required mods, plugins, or specific conditions..." onclick="event.stopPropagation()"></textarea>
                     </div>
 
                     <div class="form-section optional">
@@ -1959,7 +1966,7 @@
 
             <div class="submit-footer">
                 <div>
-                    <button class="btn btn-back" onclick="currentSubmitStep > 1 ? window.showSubmitStep(currentSubmitStep - 1) : window.closeSubmitModal()">
+                    <button class="btn btn-back" onclick="window.currentSubmitStep > 1 ? window.showSubmitStep(window.currentSubmitStep - 1) : window.closeSubmitModal()">
                         <span id="backBtnText">Cancel</span>
                     </button>
                 </div>
@@ -2505,7 +2512,7 @@
         };
 
         window.showSubmitStep = function(step) {
-    window.window.window.currentSubmitStep = step;
+    window.window.currentSubmitStep = step;
             document.querySelectorAll('.submit-step').forEach(el => el.classList.remove('active'));
             document.getElementById('submitStep' + step).classList.add('active');
             
