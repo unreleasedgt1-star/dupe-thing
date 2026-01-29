@@ -1914,7 +1914,47 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        // Firebase Configuration
+        // To use Firebase:
+        // 1. Go to https://console.firebase.google.com/
+        // 2. Create a new project
+        // 3. Enable Realtime Database
+        // 4. Set rules to: { "rules": { ".read": true, ".write": true } }
+        // 5. Replace the config below with your Firebase config
+        
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, push, onValue, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // YOUR FIREBASE CONFIG - Replace with your actual config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBc6Gpg6Gu48McX2sE9pMMv03OYHSbNfIo",
+            authDomain: "exploitvault-3a0ac.firebaseapp.com",
+            databaseURL: "https://exploitvault-3a0ac-default-rtdb.firebaseio.com",
+            projectId: "exploitvault-3a0ac",
+            storageBucket: "exploitvault-3a0ac.firebasestorage.app",
+            messagingSenderId: "351571435363",
+            appId: "1:351571435363:web:09ba5d3152e606d148fd56"
+        };
+
+        // Initialize Firebase (only if config is set)
+        let database = null;
+        let useFirebase = false;
+
+        try {
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                const app = initializeApp(firebaseConfig);
+                database = getDatabase(app);
+                useFirebase = true;
+                console.log("✓ Firebase connected");
+            } else {
+                console.log("⚠ Using localStorage only. Set up Firebase for multi-user support.");
+            }
+        } catch (error) {
+            console.log("⚠ Firebase not configured, using localStorage only");
+            useFirebase = false;
+        }
+
         // Discord OAuth Configuration
         const DISCORD_CLIENT_ID = '1466337764231479329';
         const REDIRECT_URI = window.location.origin + window.location.pathname;
@@ -1922,7 +1962,6 @@
 
         // Moderator Whitelist - Add Discord IDs here
         const MODERATOR_WHITELIST = [
-            // Add Discord IDs as strings, for example:
         '1377728128163643575'
         ];
 
@@ -1939,12 +1978,12 @@
         };
 
         // Initialize
-        window.addEventListener('load', function() {
+        window.addEventListener('load', async function() {
             const hashParams = new URLSearchParams(window.location.hash.substring(1));
             const accessToken = hashParams.get('access_token');
             
             if (accessToken) {
-                fetchDiscordUser(accessToken);
+                await fetchDiscordUser(accessToken);
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {
                 const savedUser = localStorage.getItem('exploitVaultUser');
@@ -1960,7 +1999,7 @@
                 }
             }
             
-            loadExploits();
+            await loadExploits();
             renderExploits(exploits);
         });
 
@@ -2251,25 +2290,63 @@
         }
 
         // Exploit Management
-        function loadExploits() {
+        async function loadExploits() {
+            if (useFirebase) {
+                // Load from Firebase
+                try {
+                    const exploitsRef = ref(database, 'exploits');
+                    const snapshot = await get(exploitsRef);
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        exploits = Object.values(data);
+                    }
+
+                    const rejectedRef = ref(database, 'rejected');
+                    const rejectedSnapshot = await get(rejectedRef);
+                    if (rejectedSnapshot.exists()) {
+                        const data = rejectedSnapshot.val();
+                        rejectedExploits = Object.values(data);
+                    }
+
+                    const usersRef = ref(database, 'users');
+                    const usersSnapshot = await get(usersRef);
+                    if (usersSnapshot.exists()) {
+                        const data = usersSnapshot.val();
+                        users = Object.values(data);
+                    }
+
+                    // Set up real-time listeners
+                    onValue(exploitsRef, (snapshot) => {
+                        if (snapshot.exists()) {
+                            const data = snapshot.val();
+                            exploits = Object.values(data);
+                            renderExploits(exploits);
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error loading from Firebase:", error);
+                    loadFromLocalStorage();
+                }
+            } else {
+                loadFromLocalStorage();
+            }
+        }
+
+        function loadFromLocalStorage() {
             const saved = localStorage.getItem('exploitVaultExploits');
             if (saved) {
                 exploits = JSON.parse(saved);
-                // Remove any sample exploits that were from the old version
                 exploits = exploits.filter(e => 
                     e.author !== 'ExploitMaster' && 
                     e.author !== 'BugHunter'
                 );
-                saveExploits(); // Save the cleaned data
             }
 
-            // Load rejected exploits
             const savedRejected = localStorage.getItem('exploitVaultRejected');
             if (savedRejected) {
                 rejectedExploits = JSON.parse(savedRejected);
             }
 
-            // Load users
             const savedUsers = localStorage.getItem('exploitVaultUsers');
             if (savedUsers) {
                 users = JSON.parse(savedUsers);
@@ -2288,15 +2365,51 @@
             }
         }
 
-        function saveExploits() {
+        async function saveExploits() {
+            if (useFirebase) {
+                try {
+                    const exploitsRef = ref(database, 'exploits');
+                    const exploitsObj = {};
+                    exploits.forEach(exploit => {
+                        exploitsObj[exploit.id] = exploit;
+                    });
+                    await set(exploitsRef, exploitsObj);
+                } catch (error) {
+                    console.error("Error saving to Firebase:", error);
+                }
+            }
             localStorage.setItem('exploitVaultExploits', JSON.stringify(exploits));
         }
 
-        function saveRejectedExploits() {
+        async function saveRejectedExploits() {
+            if (useFirebase) {
+                try {
+                    const rejectedRef = ref(database, 'rejected');
+                    const rejectedObj = {};
+                    rejectedExploits.forEach(exploit => {
+                        rejectedObj[exploit.id] = exploit;
+                    });
+                    await set(rejectedRef, rejectedObj);
+                } catch (error) {
+                    console.error("Error saving rejected to Firebase:", error);
+                }
+            }
             localStorage.setItem('exploitVaultRejected', JSON.stringify(rejectedExploits));
         }
 
-        function saveUsers() {
+        async function saveUsers() {
+            if (useFirebase) {
+                try {
+                    const usersRef = ref(database, 'users');
+                    const usersObj = {};
+                    users.forEach(user => {
+                        usersObj[user.id] = user;
+                    });
+                    await set(usersRef, usersObj);
+                } catch (error) {
+                    console.error("Error saving users to Firebase:", error);
+                }
+            }
             localStorage.setItem('exploitVaultUsers', JSON.stringify(users));
         }
 
