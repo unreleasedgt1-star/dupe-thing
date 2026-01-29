@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExploitVault</title>
+    <title>ExploitVault - Minecraft Exploit Database</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Staatliches&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -1748,19 +1748,46 @@
             </div>
 
             <div class="mod-tabs">
-                <button class="mod-tab active">Pending</button>
-                <button class="mod-tab">Rejected</button>
-                <button class="mod-tab">Comments</button>
-                <button class="mod-tab">Users</button>
+                <button class="mod-tab active" onclick="switchModTab('pending')">Pending</button>
+                <button class="mod-tab" onclick="switchModTab('rejected')">Rejected</button>
+                <button class="mod-tab" onclick="switchModTab('comments')">Comments</button>
+                <button class="mod-tab" onclick="switchModTab('users')">Users</button>
             </div>
 
-            <div class="mod-section">
+            <div class="mod-section" id="modSectionPending">
                 <h3>📋 Pending Exploits</h3>
                 <div class="exploits-grid" id="modPendingGrid"></div>
                 <div class="mod-empty" id="modEmptyPending">
                     <div class="mod-empty-icon">✓</div>
                     <h3>No Pending Exploits</h3>
                     <p>All exploits have been reviewed!</p>
+                </div>
+            </div>
+
+            <div class="mod-section" id="modSectionRejected" style="display: none;">
+                <h3>🚫 Rejected Exploits</h3>
+                <div class="mod-empty">
+                    <div class="mod-empty-icon">📋</div>
+                    <h3>No Rejected Exploits</h3>
+                    <p>This feature is coming soon.</p>
+                </div>
+            </div>
+
+            <div class="mod-section" id="modSectionComments" style="display: none;">
+                <h3>💬 Comments</h3>
+                <div class="mod-empty">
+                    <div class="mod-empty-icon">💬</div>
+                    <h3>Comments System</h3>
+                    <p>Comment moderation will be available soon.</p>
+                </div>
+            </div>
+
+            <div class="mod-section" id="modSectionUsers" style="display: none;">
+                <h3>👥 Users</h3>
+                <div class="mod-empty">
+                    <div class="mod-empty-icon">👥</div>
+                    <h3>User Management</h3>
+                    <p>User management features coming soon.</p>
                 </div>
             </div>
         </div>
@@ -1893,7 +1920,9 @@
 
         // Moderator Whitelist - Add Discord IDs here
         const MODERATOR_WHITELIST = [
-        '1377728128163643575'
+            // Add Discord IDs as strings, for example:
+            // '123456789012345678',
+            // '987654321098765432',
         ];
 
         // State
@@ -1918,6 +1947,11 @@
                 const savedUser = localStorage.getItem('exploitVaultUser');
                 if (savedUser) {
                     currentUser = JSON.parse(savedUser);
+                    // Re-check moderator status in case whitelist was updated
+                    if (currentUser.discordId) {
+                        currentUser.isModerator = MODERATOR_WHITELIST.includes(currentUser.discordId);
+                        localStorage.setItem('exploitVaultUser', JSON.stringify(currentUser));
+                    }
                     updateAuthUI();
                     loadUserSettings();
                 }
@@ -2423,6 +2457,29 @@
         }
 
         // Moderator Functions
+        function switchModTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.mod-tab').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Hide all sections
+            document.getElementById('modSectionPending').style.display = 'none';
+            document.getElementById('modSectionRejected').style.display = 'none';
+            document.getElementById('modSectionComments').style.display = 'none';
+            document.getElementById('modSectionUsers').style.display = 'none';
+
+            // Show selected section
+            if (tab === 'pending') {
+                document.getElementById('modSectionPending').style.display = 'block';
+            } else if (tab === 'rejected') {
+                document.getElementById('modSectionRejected').style.display = 'block';
+            } else if (tab === 'comments') {
+                document.getElementById('modSectionComments').style.display = 'block';
+            } else if (tab === 'users') {
+                document.getElementById('modSectionUsers').style.display = 'block';
+            }
+        }
+
         function updateModeratorStats() {
             const totalExploits = exploits.length;
             const pendingExploits = exploits.filter(e => e.status === 'unverified').length;
