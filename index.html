@@ -1766,10 +1766,11 @@
 
             <div class="mod-section" id="modSectionRejected" style="display: none;">
                 <h3>🚫 Rejected Exploits</h3>
-                <div class="mod-empty">
-                    <div class="mod-empty-icon">📋</div>
+                <div class="exploits-grid" id="modRejectedGrid"></div>
+                <div class="mod-empty" id="modEmptyRejected">
+                    <div class="mod-empty-icon">✓</div>
                     <h3>No Rejected Exploits</h3>
-                    <p>This feature is coming soon.</p>
+                    <p>No exploits have been rejected yet.</p>
                 </div>
             </div>
 
@@ -1784,10 +1785,11 @@
 
             <div class="mod-section" id="modSectionUsers" style="display: none;">
                 <h3>👥 Users</h3>
-                <div class="mod-empty">
+                <div id="modUsersContainer"></div>
+                <div class="mod-empty" id="modEmptyUsers">
                     <div class="mod-empty-icon">👥</div>
-                    <h3>User Management</h3>
-                    <p>User management features coming soon.</p>
+                    <h3>No Users Yet</h3>
+                    <p>No users have registered yet.</p>
                 </div>
             </div>
         </div>
@@ -1920,12 +1922,15 @@
 
         // Moderator Whitelist - Add Discord IDs here
         const MODERATOR_WHITELIST = [
+            // Add Discord IDs as strings, for example:
         '1377728128163643575'
         ];
 
         // State
         let currentUser = null;
         let exploits = [];
+        let rejectedExploits = [];
+        let users = [];
         let currentExploitId = null;
         let userSettings = {
             emailNotif: false,
@@ -1993,6 +1998,21 @@
 
                 currentUser = user;
                 localStorage.setItem('exploitVaultUser', JSON.stringify(user));
+                
+                // Add user to users list if not already there
+                const existingUser = users.find(u => u.id === user.id);
+                if (!existingUser) {
+                    users.push({
+                        id: user.id,
+                        discordId: user.discordId,
+                        displayName: user.displayName,
+                        avatar: user.avatar,
+                        joinedDate: user.joinedDate,
+                        isModerator: user.isModerator
+                    });
+                    saveUsers();
+                }
+                
                 updateAuthUI();
                 closeLoginModal();
                 alert('✓ Welcome, ' + user.displayName + '!');
@@ -2242,6 +2262,18 @@
                 );
                 saveExploits(); // Save the cleaned data
             }
+
+            // Load rejected exploits
+            const savedRejected = localStorage.getItem('exploitVaultRejected');
+            if (savedRejected) {
+                rejectedExploits = JSON.parse(savedRejected);
+            }
+
+            // Load users
+            const savedUsers = localStorage.getItem('exploitVaultUsers');
+            if (savedUsers) {
+                users = JSON.parse(savedUsers);
+            }
         }
 
         function clearAllData() {
@@ -2258,6 +2290,14 @@
 
         function saveExploits() {
             localStorage.setItem('exploitVaultExploits', JSON.stringify(exploits));
+        }
+
+        function saveRejectedExploits() {
+            localStorage.setItem('exploitVaultRejected', JSON.stringify(rejectedExploits));
+        }
+
+        function saveUsers() {
+            localStorage.setItem('exploitVaultUsers', JSON.stringify(users));
         }
 
         function openSubmitModal() {
@@ -2471,10 +2511,139 @@
                 document.getElementById('modSectionPending').style.display = 'block';
             } else if (tab === 'rejected') {
                 document.getElementById('modSectionRejected').style.display = 'block';
+                renderRejectedExploits();
             } else if (tab === 'comments') {
                 document.getElementById('modSectionComments').style.display = 'block';
             } else if (tab === 'users') {
                 document.getElementById('modSectionUsers').style.display = 'block';
+                renderUsers();
+            }
+        }
+
+        function renderRejectedExploits() {
+            const grid = document.getElementById('modRejectedGrid');
+            const emptyState = document.getElementById('modEmptyRejected');
+
+            if (rejectedExploits.length === 0) {
+                grid.style.display = 'none';
+                emptyState.style.display = 'block';
+            } else {
+                grid.style.display = 'grid';
+                emptyState.style.display = 'none';
+                
+                grid.innerHTML = rejectedExploits.map(exploit => `
+                    <div class="exploit-card">
+                        <div class="exploit-header">
+                            <h3 class="exploit-title">${exploit.title}</h3>
+                            <div class="exploit-status">
+                                <span class="badge badge-patched">REJECTED</span>
+                                <span class="badge badge-type">${exploit.type}</span>
+                            </div>
+                        </div>
+                        <div class="exploit-meta">
+                            <div class="meta-item"><span>🎮</span><span>${exploit.edition}</span></div>
+                            <div class="meta-item"><span>👤</span><span>${exploit.author}</span></div>
+                            <div class="meta-item"><span>🚫</span><span>Rejected by ${exploit.rejectedBy}</span></div>
+                            <div class="meta-item"><span>📅</span><span>${exploit.rejectedDate}</span></div>
+                        </div>
+                        <p class="exploit-description">${exploit.description}</p>
+                        <div class="exploit-footer">
+                            <div class="exploit-tags">
+                                ${exploit.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                            <div class="mod-actions" onclick="event.stopPropagation()">
+                                <button class="btn btn-approve" onclick="restoreExploit(${exploit.id})">↩️ Restore</button>
+                                <button class="btn btn-danger" onclick="permanentlyDeleteExploit(${exploit.id})">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderUsers() {
+            const container = document.getElementById('modUsersContainer');
+            const emptyState = document.getElementById('modEmptyUsers');
+
+            if (users.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'block';
+            } else {
+                container.style.display = 'block';
+                emptyState.style.display = 'none';
+                
+                container.innerHTML = `
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border-color);">
+                                    <th style="padding: 15px; text-align: left; color: var(--accent-primary);">User</th>
+                                    <th style="padding: 15px; text-align: left; color: var(--accent-primary);">Discord ID</th>
+                                    <th style="padding: 15px; text-align: left; color: var(--accent-primary);">Role</th>
+                                    <th style="padding: 15px; text-align: left; color: var(--accent-primary);">Joined</th>
+                                    <th style="padding: 15px; text-align: left; color: var(--accent-primary);">Exploits</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${users.map(user => {
+                                    const userExploits = exploits.filter(e => e.author === user.displayName).length;
+                                    return `
+                                        <tr style="border-bottom: 1px solid var(--border-color);">
+                                            <td style="padding: 15px;">
+                                                <div style="display: flex; align-items: center; gap: 10px;">
+                                                    <img src="${user.avatar}" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--accent-primary);">
+                                                    <span>${user.displayName}</span>
+                                                </div>
+                                            </td>
+                                            <td style="padding: 15px; color: var(--text-secondary); font-family: monospace;">${user.discordId}</td>
+                                            <td style="padding: 15px;">
+                                                <span class="badge ${user.isModerator ? 'badge-verified' : 'badge-type'}">
+                                                    ${user.isModerator ? 'MODERATOR' : 'USER'}
+                                                </span>
+                                            </td>
+                                            <td style="padding: 15px; color: var(--text-secondary);">${user.joinedDate}</td>
+                                            <td style="padding: 15px; color: var(--text-secondary);">${userExploits}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        }
+
+        function restoreExploit(exploitId) {
+            if (confirm('Restore this exploit back to pending?')) {
+                const exploit = rejectedExploits.find(e => e.id === exploitId);
+                if (exploit) {
+                    // Remove rejection metadata
+                    delete exploit.rejectedDate;
+                    delete exploit.rejectedBy;
+                    exploit.status = 'unverified';
+                    
+                    // Move back to active exploits
+                    exploits.unshift(exploit);
+                    saveExploits();
+                    
+                    // Remove from rejected list
+                    rejectedExploits = rejectedExploits.filter(e => e.id !== exploitId);
+                    saveRejectedExploits();
+                    
+                    updateModeratorStats();
+                    renderRejectedExploits();
+                    renderExploits(exploits);
+                    alert('✓ Exploit restored to pending.');
+                }
+            }
+        }
+
+        function permanentlyDeleteExploit(exploitId) {
+            if (confirm('⚠️ Permanently delete this exploit? This cannot be undone!')) {
+                rejectedExploits = rejectedExploits.filter(e => e.id !== exploitId);
+                saveRejectedExploits();
+                renderRejectedExploits();
+                alert('✓ Exploit permanently deleted.');
             }
         }
 
@@ -2482,7 +2651,7 @@
             const totalExploits = exploits.length;
             const pendingExploits = exploits.filter(e => e.status === 'unverified').length;
             const totalComments = 0; // Placeholder for when comments are implemented
-            const registeredUsers = parseInt(localStorage.getItem('totalUsers') || '0');
+            const registeredUsers = users.length;
 
             document.getElementById('modTotalExploits').textContent = totalExploits;
             document.getElementById('modPendingExploits').textContent = pendingExploits;
@@ -2519,12 +2688,26 @@
         }
 
         function rejectExploit(exploitId) {
-            if (confirm('Are you sure you want to reject and delete this exploit?')) {
-                exploits = exploits.filter(e => e.id !== exploitId);
-                saveExploits();
-                updateModeratorStats();
-                renderExploits(exploits);
-                alert('✓ Exploit rejected and removed.');
+            if (confirm('Are you sure you want to reject this exploit?')) {
+                const exploit = exploits.find(e => e.id === exploitId);
+                if (exploit) {
+                    // Add rejection metadata
+                    exploit.rejectedDate = new Date().toLocaleDateString();
+                    exploit.rejectedBy = currentUser.displayName;
+                    exploit.status = 'rejected';
+                    
+                    // Move to rejected list
+                    rejectedExploits.unshift(exploit);
+                    saveRejectedExploits();
+                    
+                    // Remove from active exploits
+                    exploits = exploits.filter(e => e.id !== exploitId);
+                    saveExploits();
+                    
+                    updateModeratorStats();
+                    renderExploits(exploits);
+                    alert('✓ Exploit rejected and moved to rejected tab.');
+                }
             }
         }
 
