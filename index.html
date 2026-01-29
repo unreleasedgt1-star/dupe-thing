@@ -1,0 +1,2188 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         EXPLOITVAULT - SETUP GUIDE                           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📋 GOOGLE SIGN-IN CONFIGURATION
+================================
+
+To enable actual Google authentication, follow these steps:
+
+1️⃣ CREATE GOOGLE CLOUD PROJECT
+   → Go to: https://console.cloud.google.com/
+   → Click "Select a project" → "New Project"
+   → Give it a name (e.g., "ExploitVault")
+   → Click "Create"
+
+2️⃣ ENABLE GOOGLE IDENTITY SERVICES
+   → In your project, go to "APIs & Services" → "Library"
+   → Search for "Google Identity Services" 
+   → Click on it and press "Enable"
+
+3️⃣ CREATE OAUTH CREDENTIALS
+   → Go to "APIs & Services" → "Credentials"
+   → Click "Create Credentials" → "OAuth client ID"
+   → If prompted, configure the OAuth consent screen first:
+     - Choose "External" (unless you have a Google Workspace)
+     - Fill in app name: "ExploitVault"
+     - Add your email as support email
+     - Click "Save and Continue"
+   
+   → Choose Application type: "Web application"
+   → Name: "ExploitVault Web Client"
+   
+   → Add Authorized JavaScript origins:
+     For production: https://yourdomain.com
+     For testing: http://localhost:8000
+   
+   → Click "Create"
+   → COPY the Client ID that appears
+
+4️⃣ UPDATE THIS FILE
+   → Replace "YOUR_GOOGLE_CLIENT_ID" in TWO places:
+   
+   📍 Location 1 (around line 7):
+   <meta name="google-signin-client_id" content="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com">
+   
+   📍 Location 2 (around line 1250):
+   data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+
+5️⃣ DEPLOY OR TEST
+   
+   FOR PRODUCTION:
+   → Upload to your web hosting
+   → Access via https://yourdomain.com
+   
+   FOR LOCAL TESTING:
+   → Run a local web server (Google Sign-In won't work with file://)
+   
+   Option A - Python:
+   python3 -m http.server 8000
+   
+   Option B - Node.js:
+   npx http-server -p 8000
+   
+   Option C - PHP:
+   php -S localhost:8000
+   
+   → Then open: http://localhost:8000
+   → Make sure localhost:8000 is in your Authorized JavaScript origins!
+
+6️⃣ TEST THE LOGIN
+   → Click "Sign In with Google"
+   → Select your Google account
+   → Grant permissions
+   → You should be logged in!
+
+🔒 SECURITY NOTES:
+   → Never commit your Client ID to public repositories
+   → Use environment variables in production
+   → Enable only necessary scopes
+   → Regularly rotate credentials if compromised
+
+✅ WHAT WORKS NOW:
+   → Real Google OAuth authentication
+   → User profile with name, email, avatar
+   → Persistent login (survives page refresh)
+   → Secure logout
+   → Protected actions (submit, vote)
+
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExploitVault - Minecraft Exploit Database</title>
+    <meta name="google-signin-client_id" content="760382606266-kh5006544t1oh1jc96am8hj3bfgbnkik.apps.googleusercontent.com_ID.apps.googleusercontent.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Staatliches&display=swap" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        :root {
+            --bg-primary: #0a0e14;
+            --bg-secondary: #151921;
+            --bg-tertiary: #1f2430;
+            --accent-primary: #00ff9f;
+            --accent-secondary: #00d4ff;
+            --accent-danger: #ff2e63;
+            --text-primary: #e6e6e6;
+            --text-secondary: #a0a0a0;
+            --text-muted: #5c6370;
+            --border-color: #2d3340;
+            --verified-color: #00ff9f;
+            --unverified-color: #ffaa00;
+            --patched-color: #ff2e63;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 159, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 159, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Glitch effect for header */
+        @keyframes glitch {
+            0%, 100% { transform: translate(0); }
+            33% { transform: translate(-2px, 2px); }
+            66% { transform: translate(2px, -2px); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            padding: 30px 0;
+            border-bottom: 2px solid var(--accent-primary);
+            position: relative;
+            overflow: visible;
+            z-index: 100;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-secondary), transparent);
+            animation: scanline 3s linear infinite;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-family: 'Staatliches', cursive;
+            font-size: 2.5rem;
+            letter-spacing: 3px;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(0, 255, 159, 0.5);
+            position: relative;
+        }
+
+        .logo::after {
+            content: 'VAULT';
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--accent-secondary);
+            opacity: 0.3;
+            animation: glitch 3s infinite;
+        }
+
+        .stats {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--accent-primary);
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            border-left-width: 5px;
+            transform: translateX(3px);
+            background: var(--bg-tertiary);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-primary);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Main content layout */
+        .main-content {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        /* Sidebar filters */
+        .sidebar {
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+        }
+
+        .filter-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .filter-section:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .filter-header {
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .filter-header:hover {
+            background: linear-gradient(90deg, var(--bg-tertiary), rgba(0, 255, 159, 0.1));
+        }
+
+        .filter-body {
+            padding: 15px;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 2px solid transparent;
+        }
+
+        .filter-option:hover {
+            background: rgba(0, 255, 159, 0.1);
+            border-left-color: var(--accent-primary);
+            padding-left: 12px;
+        }
+
+        .filter-option input[type="checkbox"] {
+            margin-right: 10px;
+            accent-color: var(--accent-primary);
+        }
+
+        .filter-option label {
+            cursor: pointer;
+            font-size: 0.85rem;
+            flex: 1;
+        }
+
+        .filter-count {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        /* Search and controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 159, 0.2);
+        }
+
+        .search-box::before {
+            content: '>';
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent-primary);
+            font-weight: 700;
+            pointer-events: none;
+        }
+
+        .search-box input {
+            padding-left: 40px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-primary);
+            color: var(--accent-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 159, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 159, 0.5);
+        }
+
+        .btn-secondary {
+            border-color: var(--accent-secondary);
+            color: var(--accent-secondary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent-secondary);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .sort-select {
+            padding: 15px 20px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sort-select:focus {
+            border-color: var(--accent-secondary);
+        }
+
+        /* Exploit cards */
+        .exploits-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .exploit-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .exploit-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-primary);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+            transform-origin: bottom;
+        }
+
+        .exploit-card:hover::before {
+            transform: scaleY(1);
+            transform-origin: top;
+        }
+
+        .exploit-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateX(5px);
+            box-shadow: -5px 5px 20px rgba(0, 255, 159, 0.1);
+        }
+
+        .exploit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .exploit-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .exploit-status {
+            display: flex;
+            gap: 8px;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 2px;
+        }
+
+        .badge-verified {
+            background: rgba(0, 255, 159, 0.2);
+            color: var(--verified-color);
+            border: 1px solid var(--verified-color);
+        }
+
+        .badge-unverified {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--unverified-color);
+            border: 1px solid var(--unverified-color);
+        }
+
+        .badge-patched {
+            background: rgba(255, 46, 99, 0.2);
+            color: var(--patched-color);
+            border: 1px solid var(--patched-color);
+        }
+
+        .badge-type {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--accent-secondary);
+            border: 1px solid var(--accent-secondary);
+        }
+
+        .exploit-meta {
+            display: flex;
+            gap: 20px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .exploit-description {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            line-height: 1.7;
+        }
+
+        .exploit-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .exploit-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 3px 10px;
+            background: rgba(0, 255, 159, 0.1);
+            border: 1px solid rgba(0, 255, 159, 0.3);
+            font-size: 0.75rem;
+            color: var(--accent-primary);
+        }
+
+        .exploit-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .vote-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .vote-btn:hover {
+            color: var(--accent-primary);
+            transform: scale(1.1);
+        }
+
+        .view-count {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* No results */
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .no-results-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .filter-section {
+                margin-bottom: 15px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .logo {
+                font-size: 1.8rem;
+            }
+
+            .stats {
+                gap: 15px;
+            }
+
+            .stat-item {
+                padding: 8px 15px;
+            }
+
+            .stat-number {
+                font-size: 1.5rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+        }
+
+        /* Loading animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            max-width: 900px;
+            margin: 50px auto;
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-primary);
+            position: relative;
+            animation: slideDown 0.4s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 30px;
+            background: var(--bg-tertiary);
+            border-bottom: 2px solid var(--accent-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-family: 'Staatliches', cursive;
+            font-size: 2rem;
+            color: var(--accent-primary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-modal:hover {
+            color: var(--accent-danger);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .step-indicator {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 40px;
+            justify-content: center;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 159, 0.2);
+        }
+
+        .step.completed {
+            border-color: var(--verified-color);
+            color: var(--verified-color);
+        }
+
+        .step-number {
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        .step-page {
+            display: none;
+        }
+
+        .step-page.active {
+            display: block;
+            animation: fadeInSlide 0.4s ease;
+        }
+
+        @keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: var(--accent-danger);
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 10px rgba(0, 255, 159, 0.2);
+        }
+
+        .form-textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-item:hover {
+            border-color: var(--accent-primary);
+            background: rgba(0, 255, 159, 0.05);
+        }
+
+        .checkbox-item input[type="checkbox"],
+        .checkbox-item input[type="radio"] {
+            margin-right: 10px;
+            accent-color: var(--accent-primary);
+        }
+
+        .checkbox-item.selected {
+            border-color: var(--accent-primary);
+            background: rgba(0, 255, 159, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn-back {
+            border-color: var(--text-muted);
+            color: var(--text-muted);
+        }
+
+        .btn-back:hover {
+            background: var(--text-muted);
+            color: var(--bg-primary);
+        }
+
+        .version-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .version-item {
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .version-item:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .version-item.selected {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border-color: var(--accent-primary);
+            font-weight: 700;
+        }
+
+        .help-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .dynamic-list {
+            margin-top: 10px;
+        }
+
+        .dynamic-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .dynamic-item input {
+            flex: 1;
+        }
+
+        .btn-remove {
+            padding: 10px 15px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--accent-danger);
+            color: var(--accent-danger);
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        .btn-remove:hover {
+            background: var(--accent-danger);
+            color: var(--bg-primary);
+        }
+
+        .btn-add {
+            padding: 10px 20px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--accent-secondary);
+            color: var(--accent-secondary);
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-add:hover {
+            background: var(--accent-secondary);
+            color: var(--bg-primary);
+        }
+
+        /* Auth styles */
+        .auth-required {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .auth-required-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .auth-required h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--accent-primary);
+        }
+
+        .auth-required p {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .user-button {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-primary);
+            color: var(--accent-primary);
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        .user-button:hover {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-primary);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-primary);
+            min-width: 200px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .user-dropdown.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        .dropdown-item {
+            padding: 12px 20px;
+            color: var(--text-primary);
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(0, 255, 159, 0.1);
+            padding-left: 25px;
+        }
+
+        .login-modal-content {
+            max-width: 500px;
+            margin: 100px auto;
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-primary);
+            padding: 40px;
+            text-align: center;
+        }
+
+        .login-title {
+            font-family: 'Staatliches', cursive;
+            font-size: 2rem;
+            color: var(--accent-primary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .login-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+        }
+
+        .google-login-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 30px;
+            background: white;
+            color: #444;
+            border: 2px solid var(--accent-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .google-login-btn:hover {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 159, 0.3);
+        }
+
+        .google-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .login-terms {
+            margin-top: 30px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .login-terms a {
+            color: var(--accent-secondary);
+            text-decoration: none;
+        }
+
+        .login-terms a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="logo">EXPLOIT</h1>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="verifiedCount">0</span>
+                            <span class="stat-label">Verified</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="unverifiedCount">0</span>
+                            <span class="stat-label">Unverified</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">0</span>
+                            <span class="stat-label">Users</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="authSection">
+                    <!-- Login button shown when not logged in -->
+                    <button class="btn btn-secondary" id="loginBtn" onclick="openLoginModal()">
+                        Sign In with Google
+                    </button>
+                    <!-- User menu shown when logged in -->
+                    <div class="user-menu" id="userMenu" style="display: none;">
+                        <button class="user-button" onclick="toggleUserDropdown()">
+                            <img id="userAvatar" class="user-avatar" src="" alt="User">
+                            <span id="userName"></span>
+                        </button>
+                        <div class="user-dropdown" id="userDropdown">
+                            <div class="dropdown-item" onclick="viewProfile()">
+                                👤 My Profile
+                            </div>
+                            <div class="dropdown-item" onclick="viewMyExploits()">
+                                📝 My Exploits
+                            </div>
+                            <div class="dropdown-item" onclick="logout()">
+                                🚪 Sign Out
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="filter-section">
+                    <div class="filter-header">
+                        <span>⚡ Status</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="filter-body">
+                        <div class="filter-option">
+                            <input type="checkbox" id="working">
+                            <label for="working">Working</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="verified">
+                            <label for="verified">Verified</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="patched">
+                            <label for="patched">Patched</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="unverified">
+                            <label for="unverified">Unverified</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-header">
+                        <span>🎯 Exploit Type</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="filter-body">
+                        <div class="filter-option">
+                            <input type="checkbox" id="dupe">
+                            <label for="dupe">Dupe</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="crash">
+                            <label for="crash">Crash</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="forceop">
+                            <label for="forceop">ForceOP</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="bypass">
+                            <label for="bypass">Bypass</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="other">
+                            <label for="other">Other</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-header">
+                        <span>🎮 Edition</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="filter-body">
+                        <div class="filter-option">
+                            <input type="checkbox" id="java">
+                            <label for="java">Java Edition</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="bedrock">
+                            <label for="bedrock">Bedrock Edition</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-header">
+                        <span>🌐 Platform</span>
+                        <span>▼</span>
+                    </div>
+                    <div class="filter-body">
+                        <div class="filter-option">
+                            <input type="checkbox" id="singleplayer">
+                            <label for="singleplayer">Singleplayer</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="multiplayer">
+                            <label for="multiplayer">Multiplayer</label>
+                            <span class="filter-count">0</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <main>
+                <div class="controls">
+                    <div class="search-box">
+                        <input type="text" placeholder="search exploits..." id="searchInput">
+                    </div>
+                    <select class="sort-select" id="sortSelect">
+                        <option>Newest First</option>
+                        <option>Oldest First</option>
+                        <option>Most Upvoted</option>
+                        <option>Most Viewed</option>
+                        <option>Name A-Z</option>
+                    </select>
+                    <button class="btn">Submit Exploit</button>
+                </div>
+
+                <div class="exploits-grid" id="exploitsGrid">
+                    <!-- Exploit cards will be generated here -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="login-modal-content">
+            <button class="close-modal" onclick="closeLoginModal()" style="position: absolute; top: 20px; right: 20px;">×</button>
+            <h2 class="login-title">Welcome to ExploitVault</h2>
+            <p class="login-subtitle">Sign in with your Google account to submit exploits, vote, and comment.</p>
+            
+            <!-- Google Sign-In Button Container -->
+            <div id="g_id_onload"
+                 data-client_id="760382606266-kh5006544t1oh1jc96am8hj3bfgbnkik.apps.googleusercontent.com_ID.apps.googleusercontent.com"
+                 data-callback="handleGoogleCallback"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin" 
+                 data-type="standard"
+                 data-size="large"
+                 data-theme="outline"
+                 data-text="sign_in_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left">
+            </div>
+
+            <!-- Fallback custom button for when Google button doesn't load -->
+            <div id="customGoogleBtn" style="margin-top: 20px;">
+                <button class="google-login-btn" onclick="initiateGoogleLogin()">
+                    <svg class="google-icon" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </div>
+
+            <!-- Setup Instructions Notice -->
+            <div style="margin-top: 30px; padding: 15px; background: rgba(255, 170, 0, 0.1); border: 1px solid rgba(255, 170, 0, 0.3); font-size: 0.8rem; color: #ffaa00;">
+                <strong>⚙️ Setup Required:</strong><br>
+                To enable Google Sign-In, you need to configure your Google Client ID.<br>
+                See the setup instructions in the HTML file comments at the top.
+            </div>
+
+            <p class="login-terms">
+                By signing in, you agree to our <a href="#">Terms of Service</a>, 
+                <a href="#">Privacy Policy</a>, and <a href="#">Community Guidelines</a>.
+            </p>
+        </div>
+    </div>
+
+    <!-- Submit Exploit Modal -->
+    <div id="submitModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Submit New Exploit</h2>
+                <button class="close-modal" onclick="closeSubmitModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="step-indicator">
+                    <div class="step active" data-step="1">
+                        <span class="step-number">1</span>
+                        <span>Type Selection</span>
+                    </div>
+                    <div class="step" data-step="2">
+                        <span class="step-number">2</span>
+                        <span>Details</span>
+                    </div>
+                    <div class="step" data-step="3">
+                        <span class="step-number">3</span>
+                        <span>Description</span>
+                    </div>
+                </div>
+
+                <form id="submitForm">
+                    <!-- Step 1: Type Selection -->
+                    <div class="step-page active" data-page="1">
+                        <div class="form-group">
+                            <label class="form-label required">Exploit Type</label>
+                            <div class="help-text">Select all that apply</div>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="exploitType" value="DUPE">
+                                    <span>Dupe</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="exploitType" value="CRASH">
+                                    <span>Crash</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="exploitType" value="FORCEOP">
+                                    <span>ForceOP</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="exploitType" value="BYPASS">
+                                    <span>Bypass</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="exploitType" value="OTHER">
+                                    <span>Other</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Edition</label>
+                            <div class="help-text">Select all that apply</div>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="edition" value="JAVA">
+                                    <span>Java Edition</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="edition" value="BEDROCK">
+                                    <span>Bedrock Edition</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Platform</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="radio" name="platform" value="SINGLEPLAYER" required>
+                                    <span>Singleplayer</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="radio" name="platform" value="MULTIPLAYER">
+                                    <span>Multiplayer</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Minecraft Version(s)</label>
+                            <div class="help-text">Select all versions where this exploit works</div>
+                            <div class="version-grid" id="versionGrid">
+                                <!-- Versions will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn" onclick="nextStep()">Continue</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Details -->
+                    <div class="step-page" data-page="2">
+                        <div class="form-group">
+                            <label class="form-label required">Exploit Name</label>
+                            <input type="text" class="form-input" name="exploitName" placeholder="e.g., Paper 1.21.4 Item Dupe" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Affected Server IPs (Optional)</label>
+                            <div class="help-text">List specific server IPs if this exploit targets them</div>
+                            <div id="serverIpsList" class="dynamic-list"></div>
+                            <button type="button" class="btn-add" onclick="addServerIp()">+ Add Server IP</button>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Plugin Name (if plugin-specific)</label>
+                            <input type="text" class="form-input" name="pluginName" placeholder="e.g., EssentialsX">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Status (Optional)</label>
+                            <div class="help-text">Mark this exploit as working or patched</div>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="radio" name="status" value="working">
+                                    <span>Working</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="radio" name="status" value="patched">
+                                    <span>Patched</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-back" onclick="prevStep()">Back</button>
+                            <button type="button" class="btn" onclick="nextStep()">Continue</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Description -->
+                    <div class="step-page" data-page="3">
+                        <div class="form-group">
+                            <label class="form-label required">Description & Procedure</label>
+                            <div class="help-text">Describe the exploit and how to reproduce it</div>
+                            <textarea class="form-textarea" name="description" placeholder="Explain how the exploit works and the steps to reproduce it..." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Credits</label>
+                            <div class="help-text">Who discovered this exploit?</div>
+                            <input type="text" class="form-input" name="credits" id="creditsInput" placeholder="Your username" required readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Tags (Optional)</label>
+                            <div class="help-text">Add tags separated by commas (e.g., hopper, chunk loading, nbt)</div>
+                            <input type="text" class="form-input" name="tags" placeholder="tag1, tag2, tag3">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Required Mods (Optional)</label>
+                            <div class="help-text">List any required mods with download links</div>
+                            <div id="modsList" class="dynamic-list"></div>
+                            <button type="button" class="btn-add" onclick="addMod()">+ Add Mod</button>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-back" onclick="prevStep()">Back</button>
+                            <button type="submit" class="btn">Submit Exploit</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /*
+         * GOOGLE SIGN-IN SETUP INSTRUCTIONS
+         * ==================================
+         * 
+         * To enable Google Sign-In, you need to:
+         * 
+         * 1. Go to Google Cloud Console: https://console.cloud.google.com/
+         * 
+         * 2. Create a new project (or select an existing one)
+         * 
+         * 3. Enable the Google Identity Services API:
+         *    - Navigate to "APIs & Services" > "Library"
+         *    - Search for "Google Identity Services"
+         *    - Click "Enable"
+         * 
+         * 4. Create OAuth 2.0 credentials:
+         *    - Go to "APIs & Services" > "Credentials"
+         *    - Click "Create Credentials" > "OAuth client ID"
+         *    - Choose "Web application"
+         *    - Add your website URL to "Authorized JavaScript origins"
+         *      Example: https://yourdomain.com (or http://localhost:8000 for testing)
+         *    - Add your redirect URI to "Authorized redirect URIs" (optional)
+         * 
+         * 5. Copy your Client ID and replace it in TWO places in this file:
+         *    - Line ~7: <meta name="google-signin-client_id" content="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com">
+         *    - Line ~1250: data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+         * 
+         * 6. Your Client ID will look like: 
+         *    123456789-abcdefghijklmnop.apps.googleusercontent.com
+         * 
+         * TESTING LOCALLY:
+         * ===============
+         * - You can test on localhost by adding http://localhost:8000 (or your port)
+         *   to the "Authorized JavaScript origins" in Google Cloud Console
+         * - For local testing, you may need to run a local web server:
+         *   python3 -m http.server 8000
+         *   OR
+         *   npx http-server -p 8000
+         * 
+         * Note: File:// protocol won't work with Google Sign-In for security reasons.
+         */
+
+        // Authentication state
+        let currentUser = null;
+
+        // Check for existing login on page load
+        window.addEventListener('load', function() {
+            const savedUser = localStorage.getItem('exploitVaultUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                updateAuthUI();
+            }
+        });
+
+        function openLoginModal() {
+            document.getElementById('loginModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Google Sign-In Callback Handler
+        function handleGoogleCallback(response) {
+            try {
+                // Decode the JWT credential to get user info
+                const credential = response.credential;
+                const payload = parseJwt(credential);
+                
+                if (!payload) {
+                    alert('❌ Error: Could not process Google Sign-In. Please try again.');
+                    return;
+                }
+                
+                // Create user object from Google data
+                const googleUser = {
+                    id: 'google_' + payload.sub,
+                    name: payload.name,
+                    email: payload.email,
+                    avatar: payload.picture,
+                    provider: 'google',
+                    googleId: payload.sub
+                };
+
+                // Save user to state and localStorage
+                currentUser = googleUser;
+                localStorage.setItem('exploitVaultUser', JSON.stringify(googleUser));
+                
+                // Update UI
+                updateAuthUI();
+                closeLoginModal();
+                
+                // Show welcome message
+                console.log('✓ User logged in:', googleUser);
+                showNotification('✓ Successfully signed in as ' + googleUser.name + '!', 'success');
+            } catch (error) {
+                console.error('Error in Google Sign-In callback:', error);
+                alert('❌ Error signing in with Google. Please try again.');
+            }
+        }
+
+        // Helper function to decode JWT token
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('Error parsing JWT:', e);
+                return null;
+            }
+        }
+
+        // Fallback function for custom button
+        function initiateGoogleLogin() {
+            // Try to trigger the Google Sign-In popup
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                google.accounts.id.prompt();
+            } else {
+                alert('❌ Google Sign-In is not available.\n\nPossible reasons:\n1. You need to add your Google Client ID\n2. Check your internet connection\n3. Make sure you\'re running on a web server (not file://)');
+            }
+        }
+
+        // Notification helper
+        function showNotification(message, type = 'info') {
+            // Simple alert for now - could be replaced with a toast notification
+            alert(message);
+        }
+
+        function updateAuthUI() {
+            const loginBtn = document.getElementById('loginBtn');
+            const userMenu = document.getElementById('userMenu');
+            const userName = document.getElementById('userName');
+            const userAvatar = document.getElementById('userAvatar');
+
+            if (currentUser) {
+                // User is logged in
+                loginBtn.style.display = 'none';
+                userMenu.style.display = 'block';
+                userName.textContent = currentUser.name;
+                userAvatar.src = currentUser.avatar;
+            } else {
+                // User is not logged in
+                loginBtn.style.display = 'block';
+                userMenu.style.display = 'none';
+            }
+        }
+
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        function viewProfile() {
+            toggleUserDropdown();
+            alert('Profile page - Coming soon!');
+        }
+
+        function viewMyExploits() {
+            toggleUserDropdown();
+            const myExploits = exploits.filter(e => e.author === currentUser.name);
+            if (myExploits.length === 0) {
+                alert('You haven\'t submitted any exploits yet.');
+            } else {
+                alert(`You have submitted ${myExploits.length} exploit(s).`);
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to sign out?')) {
+                currentUser = null;
+                localStorage.removeItem('exploitVaultUser');
+                updateAuthUI();
+                toggleUserDropdown();
+                alert('✓ Successfully signed out.');
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const userMenu = document.getElementById('userMenu');
+            const dropdown = document.getElementById('userDropdown');
+            if (userMenu && !userMenu.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        // Exploit data - initially empty
+        let exploits = [];
+
+        const exploitsGrid = document.getElementById('exploitsGrid');
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+
+        // Modal management
+        let currentStep = 1;
+
+        function openSubmitModal() {
+            // Check if user is logged in
+            if (!currentUser) {
+                openLoginModal();
+                return;
+            }
+            
+            document.getElementById('submitModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            populateVersions();
+            
+            // Auto-fill credits with current user's name
+            document.getElementById('creditsInput').value = currentUser.name;
+        }
+
+        function closeSubmitModal() {
+            document.getElementById('submitModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            currentStep = 1;
+            updateStepDisplay();
+            document.getElementById('submitForm').reset();
+        }
+
+        function nextStep() {
+            if (validateStep(currentStep)) {
+                currentStep++;
+                updateStepDisplay();
+            }
+        }
+
+        function prevStep() {
+            currentStep--;
+            updateStepDisplay();
+        }
+
+        function updateStepDisplay() {
+            // Update step indicators
+            document.querySelectorAll('.step').forEach((step, index) => {
+                const stepNum = index + 1;
+                step.classList.remove('active', 'completed');
+                if (stepNum === currentStep) {
+                    step.classList.add('active');
+                } else if (stepNum < currentStep) {
+                    step.classList.add('completed');
+                }
+            });
+
+            // Update step pages
+            document.querySelectorAll('.step-page').forEach((page, index) => {
+                const pageNum = index + 1;
+                page.classList.toggle('active', pageNum === currentStep);
+            });
+        }
+
+        function validateStep(step) {
+            const currentPage = document.querySelector(`.step-page[data-page="${step}"]`);
+            const requiredInputs = currentPage.querySelectorAll('[required]');
+            
+            for (let input of requiredInputs) {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    const group = currentPage.querySelectorAll(`[name="${input.name}"]`);
+                    const checked = Array.from(group).some(i => i.checked);
+                    if (!checked) {
+                        alert(`Please select at least one option for ${input.name}`);
+                        return false;
+                    }
+                } else if (!input.value.trim()) {
+                    alert(`Please fill in ${input.name || 'all required fields'}`);
+                    input.focus();
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function populateVersions() {
+            const versionGrid = document.getElementById('versionGrid');
+            const javaVersions = [
+                // 1.21.x
+                '1.21.11', '1.21.10', '1.21.9', '1.21.8', '1.21.7', '1.21.6', '1.21.5', '1.21.4', '1.21.3', '1.21.2', '1.21.1', '1.21.0',
+                // 1.20.x
+                '1.20.6', '1.20.5', '1.20.4', '1.20.3', '1.20.2', '1.20.1', '1.20.0',
+                // 1.19.x
+                '1.19.4', '1.19.3', '1.19.2', '1.19.1', '1.19.0',
+                // 1.18.x
+                '1.18.2', '1.18.1', '1.18.0',
+                // 1.17.x
+                '1.17.1', '1.17.0',
+                // 1.16.x
+                '1.16.5', '1.16.4', '1.16.3', '1.16.2', '1.16.1', '1.16.0',
+                // 1.15.x
+                '1.15.2', '1.15.1', '1.15.0',
+                // 1.14.x
+                '1.14.4', '1.14.3', '1.14.2', '1.14.1', '1.14.0',
+                // 1.13.x
+                '1.13.2', '1.13.1', '1.13.0',
+                // 1.12.x
+                '1.12.2', '1.12.1', '1.12.0',
+                // 1.11.x
+                '1.11.2', '1.11.1', '1.11.0',
+                // 1.10.x
+                '1.10.2', '1.10.1', '1.10.0',
+                // 1.9.x
+                '1.9.4', '1.9.3', '1.9.2', '1.9.1', '1.9.0',
+                // 1.8.x
+                '1.8.9', '1.8.8', '1.8.7', '1.8.6', '1.8.5', '1.8.4', '1.8.3', '1.8.2', '1.8.1', '1.8.0',
+                // 1.7.x
+                '1.7.10', '1.7.9', '1.7.8', '1.7.7', '1.7.6', '1.7.5', '1.7.4', '1.7.3', '1.7.2', '1.7.1', '1.7.0',
+                // 1.6.x
+                '1.6.4', '1.6.3', '1.6.2', '1.6.1', '1.6.0',
+                // 1.5.x
+                '1.5.2', '1.5.1', '1.5.0',
+                // 1.4.x
+                '1.4.7', '1.4.6', '1.4.5', '1.4.4', '1.4.3', '1.4.2', '1.4.1', '1.4.0',
+                // 1.3.x
+                '1.3.2', '1.3.1', '1.3.0',
+                // 1.2.x
+                '1.2.5', '1.2.4', '1.2.3', '1.2.2', '1.2.1', '1.2.0',
+                // 1.1.x
+                '1.1.0',
+                // 1.0.x
+                '1.0.0'
+            ];
+
+            versionGrid.innerHTML = javaVersions.map(version => `
+                <div class="version-item" onclick="toggleVersion(this)" data-version="${version}">
+                    ${version}
+                </div>
+            `).join('');
+        }
+
+        function toggleVersion(element) {
+            element.classList.toggle('selected');
+        }
+
+        // Dynamic list management
+        function addServerIp() {
+            const list = document.getElementById('serverIpsList');
+            const item = document.createElement('div');
+            item.className = 'dynamic-item';
+            item.innerHTML = `
+                <input type="text" class="form-input" placeholder="e.g., play.example.com">
+                <button type="button" class="btn-remove" onclick="this.parentElement.remove()">×</button>
+            `;
+            list.appendChild(item);
+        }
+
+        function addMod() {
+            const list = document.getElementById('modsList');
+            const item = document.createElement('div');
+            item.className = 'dynamic-item';
+            item.innerHTML = `
+                <input type="text" class="form-input" placeholder="Mod name" style="flex: 1;">
+                <input type="text" class="form-input" placeholder="Download link" style="flex: 2;">
+                <button type="button" class="btn-remove" onclick="this.parentElement.remove()">×</button>
+            `;
+            list.appendChild(item);
+        }
+
+        // Form submission
+        document.getElementById('submitForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            // Get selected versions
+            const selectedVersions = Array.from(document.querySelectorAll('.version-item.selected'))
+                .map(el => el.dataset.version);
+            
+            // Get exploit types
+            const exploitTypes = Array.from(document.querySelectorAll('input[name="exploitType"]:checked'))
+                .map(el => el.value);
+            
+            // Get editions
+            const editions = Array.from(document.querySelectorAll('input[name="edition"]:checked'))
+                .map(el => el.value);
+            
+            // Get server IPs
+            const serverIps = Array.from(document.querySelectorAll('#serverIpsList input'))
+                .map(el => el.value)
+                .filter(val => val.trim());
+            
+            // Get mods
+            const mods = [];
+            const modItems = document.querySelectorAll('#modsList .dynamic-item');
+            modItems.forEach(item => {
+                const inputs = item.querySelectorAll('input');
+                if (inputs[0].value.trim() && inputs[1].value.trim()) {
+                    mods.push({
+                        name: inputs[0].value.trim(),
+                        link: inputs[1].value.trim()
+                    });
+                }
+            });
+            
+            // Parse tags
+            const tagsInput = formData.get('tags');
+            const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
+            
+            // Create new exploit object
+            const newExploit = {
+                id: exploits.length + 1,
+                title: formData.get('exploitName'),
+                type: exploitTypes[0] || 'OTHER',
+                status: 'unverified',
+                edition: editions.join(' & ') || 'Unknown',
+                version: selectedVersions[0] || 'Unknown',
+                server: formData.get('pluginName') || 'N/A',
+                description: formData.get('description'),
+                upvotes: 0,
+                views: 0,
+                tags: tags,
+                author: currentUser ? currentUser.name : formData.get('credits'),
+                date: 'Just now',
+                pluginName: formData.get('pluginName'),
+                serverIps: serverIps,
+                mods: mods,
+                selectedVersions: selectedVersions,
+                exploitTypes: exploitTypes,
+                editions: editions
+            };
+            
+            // Add to exploits array
+            exploits.unshift(newExploit);
+            
+            // Update stats
+            updateStats();
+            
+            // Re-render
+            renderExploits(exploits);
+            
+            // Close modal
+            closeSubmitModal();
+            
+            // Show success message
+            alert('✓ Exploit submitted successfully! It will be reviewed by moderators.');
+        });
+
+        // Update submit button click handler
+        document.querySelector('.controls .btn').addEventListener('click', openSubmitModal);
+
+        function updateStats() {
+            const verified = exploits.filter(e => e.status === 'verified').length;
+            const unverified = exploits.filter(e => e.status === 'unverified').length;
+            document.getElementById('verifiedCount').textContent = verified;
+            document.getElementById('unverifiedCount').textContent = unverified;
+        }
+
+        function voteExploit(exploitId) {
+            // Check if user is logged in
+            if (!currentUser) {
+                openLoginModal();
+                return;
+            }
+
+            // Find the exploit
+            const exploit = exploits.find(e => e.id === exploitId);
+            if (!exploit) return;
+
+            // Check if user already voted (stored in localStorage)
+            const votedExploits = JSON.parse(localStorage.getItem('votedExploits') || '[]');
+            const hasVoted = votedExploits.includes(exploitId);
+
+            if (hasVoted) {
+                // Remove vote
+                exploit.upvotes--;
+                const index = votedExploits.indexOf(exploitId);
+                votedExploits.splice(index, 1);
+            } else {
+                // Add vote
+                exploit.upvotes++;
+                votedExploits.push(exploitId);
+            }
+
+            // Save voted exploits
+            localStorage.setItem('votedExploits', JSON.stringify(votedExploits));
+
+            // Re-render
+            renderExploits(exploits);
+        }
+
+        function renderExploits(exploitsToRender) {
+            if (exploitsToRender.length === 0) {
+                exploitsGrid.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">⚠</div>
+                        <h2>No exploits found</h2>
+                        <p>Try adjusting your filters or search query</p>
+                    </div>
+                `;
+                return;
+            }
+
+            exploitsGrid.innerHTML = exploitsToRender.map(exploit => `
+                <div class="exploit-card">
+                    <div class="exploit-header">
+                        <h3 class="exploit-title">${exploit.title}</h3>
+                        <div class="exploit-status">
+                            <span class="badge badge-${exploit.status}">${exploit.status}</span>
+                            <span class="badge badge-type">${exploit.type}</span>
+                        </div>
+                    </div>
+                    <div class="exploit-meta">
+                        <div class="meta-item">
+                            <span>🎮</span>
+                            <span>${exploit.edition}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span>📦</span>
+                            <span>${exploit.version}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span>🖥️</span>
+                            <span>${exploit.server}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span>👤</span>
+                            <span>${exploit.author}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span>🕐</span>
+                            <span>${exploit.date}</span>
+                        </div>
+                    </div>
+                    <p class="exploit-description">${exploit.description}</p>
+                    <div class="exploit-footer">
+                        <div class="exploit-tags">
+                            ${exploit.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                        <div class="exploit-actions">
+                            <button class="vote-btn" onclick="voteExploit(${exploit.id})">▲ ${exploit.upvotes}</button>
+                            <span class="view-count">👁 ${exploit.views}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add stagger animation
+            const cards = document.querySelectorAll('.exploit-card');
+            cards.forEach((card, index) => {
+                card.style.animation = `fadeInUp 0.5s ease forwards ${index * 0.1}s`;
+                card.style.opacity = '0';
+            });
+        }
+
+        // Add fade in animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Filter and search functionality
+        function filterExploits() {
+            const searchTerm = searchInput.value.toLowerCase();
+            let filtered = exploits.filter(exploit => 
+                exploit.title.toLowerCase().includes(searchTerm) ||
+                exploit.description.toLowerCase().includes(searchTerm) ||
+                exploit.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+            );
+
+            // Apply checkbox filters
+            const checkboxes = document.querySelectorAll('.filter-option input[type="checkbox"]:checked');
+            if (checkboxes.length > 0) {
+                const activeFilters = Array.from(checkboxes).map(cb => cb.id);
+                filtered = filtered.filter(exploit => {
+                    return activeFilters.some(filter => {
+                        const filterLower = filter.toLowerCase();
+                        return exploit.status === filterLower ||
+                               exploit.type.toLowerCase() === filterLower ||
+                               exploit.edition.toLowerCase().includes(filterLower) ||
+                               (filterLower === 'multiplayer' && exploit.server !== 'Singleplayer') ||
+                               (filterLower === 'singleplayer' && exploit.server === 'Singleplayer');
+                    });
+                });
+            }
+
+            renderExploits(filtered);
+        }
+
+        // Event listeners
+        searchInput.addEventListener('input', filterExploits);
+        
+        document.querySelectorAll('.filter-option input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', filterExploits);
+        });
+
+        sortSelect.addEventListener('change', function() {
+            const sortedExploits = [...exploits];
+            switch(this.value) {
+                case 'Oldest First':
+                    sortedExploits.reverse();
+                    break;
+                case 'Most Upvoted':
+                    sortedExploits.sort((a, b) => b.upvotes - a.upvotes);
+                    break;
+                case 'Most Viewed':
+                    sortedExploits.sort((a, b) => b.views - a.views);
+                    break;
+                case 'Name A-Z':
+                    sortedExploits.sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+            }
+            renderExploits(sortedExploits);
+        });
+
+        // Collapsible filter sections
+        document.querySelectorAll('.filter-header').forEach(header => {
+            header.addEventListener('click', function() {
+                const body = this.nextElementSibling;
+                const arrow = this.querySelector('span:last-child');
+                body.style.display = body.style.display === 'none' ? 'block' : 'none';
+                arrow.textContent = body.style.display === 'none' ? '▶' : '▼';
+            });
+        });
+
+        // Initial render
+        renderExploits(exploits);
+    </script>
+</body>
+</html>
