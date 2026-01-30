@@ -338,6 +338,7 @@
             background: linear-gradient(90deg, transparent, rgba(0, 255, 159, 0.3), transparent);
             pointer-events: none;
             transition: left 0.5s ease;
+            pointer-events: none;
         }
 
         .btn:hover::before {
@@ -887,6 +888,7 @@
         .login-modal-content {
             pointer-events: auto;
             pointer-events: auto;
+            pointer-events: auto;
             max-width: 500px;
             margin: 100px auto;
             background: var(--bg-secondary);
@@ -899,6 +901,7 @@
         }
 
         .close-modal {
+            pointer-events: auto;
             pointer-events: auto;
             background: none;
             border: none;
@@ -972,6 +975,7 @@
         .submit-modal-content {
             pointer-events: auto;
             pointer-events: auto;
+            pointer-events: auto;
             max-width: 800px;
             margin: 50px auto;
             background: var(--bg-secondary);
@@ -982,6 +986,7 @@
         }
 
         .submit-header {
+            pointer-events: auto;
             pointer-events: auto;
             pointer-events: auto;
             padding: 30px 40px;
@@ -1033,6 +1038,7 @@
         }
 
         .submit-body {
+            pointer-events: auto;
             pointer-events: auto;
             pointer-events: auto;
             padding: 40px;
@@ -1158,6 +1164,7 @@
         }
 
         .submit-footer {
+            pointer-events: auto;
             pointer-events: auto;
             padding: 25px 40px;
             border-top: 2px solid var(--border-color);
@@ -2208,6 +2215,7 @@ function setupSubmitModalButtons() {
         await saveUsers();
         
         updateAuthUI();
+        updateStats();
         updateStats();
         updateStats(); // Update user count display
                 closeLoginModal();
