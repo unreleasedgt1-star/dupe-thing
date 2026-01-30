@@ -129,6 +129,7 @@
         }
 
         .logo::after {
+            pointer-events: none;
             content: 'VAULT';
             position: absolute;
             left: 0;
@@ -303,6 +304,7 @@
         }
 
         .btn {
+            pointer-events: auto;
             padding: 15px 30px;
             background: var(--bg-secondary);
             border: 2px solid var(--accent-primary);
@@ -326,6 +328,7 @@
         }
 
         .btn::before {
+            pointer-events: none;
             content: '';
             position: absolute;
             top: 0;
@@ -392,6 +395,7 @@
         }
 
         .exploit-card::before {
+            pointer-events: none;
             content: '';
             position: absolute;
             top: 0;
@@ -522,6 +526,7 @@
         }
 
         .vote-btn {
+            pointer-events: auto;
             background: none;
             border: none;
             color: var(--text-muted);
@@ -757,6 +762,7 @@
         }
 
         .toggle-switch::after {
+            pointer-events: none;
             content: '';
             position: absolute;
             width: 22px;
@@ -893,6 +899,7 @@
         }
 
         .close-modal {
+            pointer-events: auto;
             background: none;
             border: none;
             color: var(--text-secondary);
@@ -1005,6 +1012,7 @@
         }
 
         .step-indicator::before {
+            pointer-events: none;
             content: attr(data-step);
             position: absolute;
             top: -30px;
@@ -1079,6 +1087,7 @@
         .platform-btn,
         .category-btn,
         .status-btn {
+            pointer-events: auto;
             padding: 15px 20px;
             background: var(--bg-tertiary);
             border: 2px solid var(--border-color);
@@ -1149,6 +1158,7 @@
         }
 
         .submit-footer {
+            pointer-events: auto;
             padding: 25px 40px;
             border-top: 2px solid var(--border-color);
             display: flex;
@@ -1240,6 +1250,7 @@
         }
 
         .mod-tab {
+            pointer-events: auto;
             padding: 15px 30px;
             background: transparent;
             border: none;
@@ -1333,6 +1344,7 @@
             .submit-header,
             .submit-body,
             .submit-footer {
+            pointer-events: auto;
                 padding: 20px;
             }
 
@@ -2193,9 +2205,10 @@ function setupSubmitModalButtons() {
         } else {
             users.push(userEntry);
         }
-        await saveUsers(); // Save to both Firebase and localStorage
+        await saveUsers();
         
         updateAuthUI();
+        updateStats();
         updateStats(); // Update user count display
                 closeLoginModal();
                 alert('✓ Welcome, ' + user.displayName + '!');
